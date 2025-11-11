@@ -1,0 +1,64 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.sqlite3-journal
+
+# Pipenv (solo caché)
+.pipenv/
+pipenv/
+
+# Entornos virtuales (por si usas venv)
+venv/
+env/
+.venv/
+ENV/
+
+# Django local
+db.sqlite3
+media/
+staticfiles/
+static/
+*.log
+local_settings.py
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+.env.example
+
+# IDE / Editores
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Pruebas / Cobertura
+htmlcov/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Otros
+*.pid
+*.seed
+*.orig
+logs/
