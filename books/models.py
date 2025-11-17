@@ -41,25 +41,28 @@ class Books(models.Model):
 
     @property
     def categories(self):
-        """Acceso directo a categorías (relación N:M)"""
         return Category.objects.filter(bookcategory__book=self)
+
+    @property
+    def authors(self):
+        return Authors.objects.filter(authorbook__book=self)
 
 
 class AuthorBook(models.Model):
-    author = models.ForeignKey('Authors', models.DO_NOTHING, blank=True, null=True)
-    book = models.ForeignKey('Books', models.DO_NOTHING, blank=True, null=True)
+    author = models.ForeignKey('Authors', models.DO_NOTHING, blank=True,null=True, related_name='books')
+    book = models.ForeignKey('Books',models.DO_NOTHING,blank=True,null=True,related_name='authors')
 
     class Meta:
         managed = False
         db_table = 'author_book'
+        unique_together = ('author', 'book')
 
 
 class Category(models.Model):
-    """Categorías de libros (con jerarquía opcional)"""
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True, null=True)
-    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='subcategories')
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE,related_name='subcategories')
 
     class Meta:
         db_table = 'categories'
@@ -73,14 +76,12 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def books(self):
-        """Devuelve todos los libros de esta categoría"""
         return Books.objects.filter(bookcategory__category=self)
 
 
 class BookCategory(models.Model):
-    """Tabla intermedia N:M entre Books y Category"""
-    book = models.ForeignKey('Books', on_delete=models.CASCADE, db_column='book_id')
-    category = models.ForeignKey('Category', on_delete=models.CASCADE, db_column='category_id')
+    book = models.ForeignKey('Books', on_delete=models.CASCADE, db_column='book_id', related_name='book_categories')
+    category = models.ForeignKey('Category', on_delete=models.CASCADE, db_column='category_id', related_name='category_books')
 
     class Meta:
         db_table = 'book_category'
