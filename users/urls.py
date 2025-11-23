@@ -1,9 +1,14 @@
-from rest_framework.routers import DefaultRouter
-from .views import ClientViewSet, AddressViewSet
+from django.urls import path
+from .views import (
+    ClientMeView,
+    AddressListView,
+    AddressDetailView,
+)
 
-router = DefaultRouter()
+urlpatterns = [
+    path("client/me/", ClientMeView.as_view(), name="client-me"),
 
-router.register(r"clients", ClientViewSet, basename="clients")
-router.register(r"addresses", AddressViewSet, basename="address")
-
-urlpatterns = router.urls
+    #CRUD addresses
+    path("addresses/", AddressListView.as_view(), name="address-list"),
+    path("addresses/<int:pk>/", AddressDetailView.as_view(), name="address-detail"),
+]

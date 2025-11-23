@@ -3,7 +3,7 @@ from .models import User, Client, Address
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer de solo lectura (Djoser maneja creación)"""
+    #Serializer de solo lectura (Djoser maneja el CREATE)
     class Meta:
         model = User
         fields = [
