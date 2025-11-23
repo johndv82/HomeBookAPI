@@ -1,8 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
 
-# Create your models here.
-
 class Authors(models.Model):
     olid = models.CharField(unique=True, max_length=50, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
