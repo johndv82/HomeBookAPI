@@ -3,11 +3,7 @@ from users.models import Client, Address
 from books.models import Books
 from payments.models import PaymentMethod
 
-# Create your models here.
-
-
 class Cart(models.Model):
-    """Carrito de compras"""
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='carts')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -24,7 +20,6 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    """Items dentro del carrito"""
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     book = models.ForeignKey(Books, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
@@ -38,7 +33,6 @@ class CartItem(models.Model):
     
 
 class Order(models.Model):
-    """Orden de compra"""
     STATUS_CHOICES = [
         ('pending', 'Pendiente'),
         ('paid', 'Pagada'),
@@ -63,7 +57,6 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    """Detalle de cada producto en la orden"""
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     book = models.ForeignKey(Books, on_delete=models.SET_NULL, null=True)
     quantity = models.PositiveIntegerField(default=1)
