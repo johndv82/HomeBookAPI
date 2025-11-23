@@ -1,10 +1,8 @@
 from django.db import models
 from orders.models import Order
 
-# Create your models here.
-
 class Shipping(models.Model):
-    """Datos de envío asociados a la orden"""
+    #Datos de envío asociados a la orden
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='shipping')
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
     carrier = models.CharField(max_length=100, blank=True, null=True)
