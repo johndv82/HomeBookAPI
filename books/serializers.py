@@ -30,8 +30,8 @@ class BookSerializer(serializers.ModelSerializer):
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
-    authors = AuthorSerializer(source="authors", many=True, read_only=True)
-    categories = CategorySerializer(source="categories", many=True, read_only=True)
+    authors = AuthorSerializer(many=True, read_only=True)
+    categories = CategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = Books

@@ -139,7 +139,7 @@ AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "api.pagination.DefaultPagination",
-    "EXCEPTION_HANDLER": "api.exceptions.custom_exception_handler",
+    #"EXCEPTION_HANDLER": "api.exceptions.custom_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": [
         "api.throttling.BurstRateThrottle",
     ],

@@ -39,14 +39,15 @@ class Books(models.Model):
 
     @property
     def categories(self):
-        return Category.objects.filter(bookcategory__book=self)
+        return Category.objects.filter(category_books__book=self)
 
     @property
     def authors(self):
-        return Authors.objects.filter(authorbook__book=self)
+        return Authors.objects.filter(author_books__book=self)
 
 
 class AuthorBook(models.Model):
+    id = models.BigAutoField(primary_key=True)
     author = models.ForeignKey('Authors', models.DO_NOTHING, blank=True,null=True, related_name='books')
     book = models.ForeignKey('Books',models.DO_NOTHING,blank=True,null=True,related_name='authors')
 
