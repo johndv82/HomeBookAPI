@@ -50,27 +50,6 @@ class AddToCartView(generics.GenericAPIView):
         return Response(CartSerializer(cart).data)
 
 
-
-# Actualizar cantidad del carrito
-class UpdateCartItemView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = CartItemSerializer
-
-    def patch(self, request, item_id):
-        try:
-            item = CartItem.objects.get(id=item_id, cart__client__user=request.user)
-        except CartItem.DoesNotExist:
-            return Response({"error": "Item no encontrado."}, status=404)
-
-        quantity = request.data.get("quantity")
-        if not quantity or int(quantity) < 1:
-            return Response({"error": "Cantidad inválida."}, status=400)
-
-        item.quantity = quantity
-        item.save()
-        return Response(CartSerializer(item.cart).data)
-
-
 # Eliminar item del carrito
 class RemoveCartItemView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
