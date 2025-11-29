@@ -90,6 +90,11 @@ DATABASES = {
         'PASSWORD': 'server',
         'HOST': 'localhost',
         'PORT': '5432',
+        'TEST': {
+            'NAME': 'test_home_book',
+            'MIRROR': None,
+            'DEPENDENCIES': []
+        }
     }
 }
 
@@ -165,3 +170,6 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
 ]
+
+
+TEST_RUNNER = "project.test_runner.NoDbTestRunner"
