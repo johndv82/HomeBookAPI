@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from corsheaders.defaults import default_headers
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-u5&0!o1^_+l=%*1=9!*2@=a#cuxf^9rns18+*ecvmtwq!8#x99
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["homebook-alb-2106439201.us-east-1.elb.amazonaws.com", "127.0.0.1"]
 
 
 # Application definition
@@ -85,16 +86,16 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'home_book',
-        'USER': 'postgres',
-        'PASSWORD': 'server',
-        'HOST': 'localhost',
+        'NAME': os.environ.get('DATABASE_NAME', 'home_book'),
+        'USER': os.environ.get('DATABASE_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'server'),
+        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
         'PORT': '5432',
-        'TEST': {
-            'NAME': 'test_home_book',
-            'MIRROR': None,
-            'DEPENDENCIES': []
-        }
+        # 'TEST': {
+        #     'NAME': 'test_home_book',
+        #     'MIRROR': None,
+        #     'DEPENDENCIES': []
+        # }
     }
 }
 
@@ -173,3 +174,5 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 
 TEST_RUNNER = "project.test_runner.NoDbTestRunner"
+
+print("AQUI---> ALLOWED_HOSTS:", ALLOWED_HOSTS)

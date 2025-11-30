@@ -62,3 +62,49 @@ htmlcov/
 *.seed
 *.orig
 logs/
+
+
+# ====================
+# TERRAFORM
+# ====================
+
+# Archivos de estado local (nunca subir a git)
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+
+# Archivos de plan (salida de terraform plan -out=...)
+*.tfplan
+
+# Directorio de estado local (cuando usas backend "local")
+.terraform.tfstate.d/
+
+# Directorio de plugins y módulos descargados
+.terraform/
+.terraform.lock.hcl
+
+# Archivos de crash log
+crash.log
+crash.*.log
+
+# Archivos override (para testing o entornos locales)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variables locales (secrets o valores sensibles)
+*.tfvars
+*.tfvars.json
+# → Excepción: puedes querer subir ejemplos o defaults
+# !example.tfvars
+# !*.auto.tfvars  (si usas variables automáticas que sí quieres versionar)
+
+# Archivos generados por terraform docs u otras herramientas
+.terraform-docs.yml
+*.tfdoc
+
+# Si usas Terragrunt
+.terragrunt-cache/
+terragrunt.hcl
