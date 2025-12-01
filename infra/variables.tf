@@ -6,3 +6,8 @@ variable "db_name" { type = string }
 variable "image_tag" {
   type = string
 }
+
+
+variable "django_superuser_password" { type = string }
+variable "django_superuser_email" { type = string }
+variable "django_superuser_username" { type = string }

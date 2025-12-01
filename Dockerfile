@@ -10,25 +10,32 @@ RUN apt-get update \
        build-essential \
        libpq-dev \
        curl \
+       bash \
     && pip install --upgrade pip \
     && pip install pipenv \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear directorio del app dentro del contenedor
+# Crear directorio de la app dentro del contenedor
 WORKDIR /app
 
-# Copiar Pipenv y Pipenv.lock primero para aprovechar cache
+# Copiar Pipfile y Pipfile.lock primero para aprovechar cache
 COPY Pipfile Pipfile.lock /app/
 
-# Instalar dependencias del proyecto con pipenv sin virtualenv
+# Instalar dependencias del proyecto
 RUN pipenv install --system --deploy
 
 # Copiar el resto del proyecto
 COPY . /app
 
-# Exponer el puerto
+# Exponer puerto
 EXPOSE 8000
 
-# Comando por defecto
-CMD ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Comando por defecto: migraciones + Gunicorn
+CMD bash -c "\
+    echo '>>> Running migrations'; \
+    python manage.py makemigrations --noinput || echo '>>> No new migrations'; \
+    python.manage.py migrate --noinput; \
+    echo '>>> Starting Gunicorn'; \
+    exec gunicorn project.wsgi:application --bind 0.0.0.0:8000 \
+"

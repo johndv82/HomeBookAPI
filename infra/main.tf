@@ -2,56 +2,48 @@
 
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
-}
-
-resource "aws_subnet" "public_1" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone = "${var.aws_region}a"
-}
-
-resource "aws_subnet" "public_2" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.2.0/24"
-  map_public_ip_on_launch = true
-  availability_zone = "${var.aws_region}b"
-}
-
-resource "aws_subnet" "private_1" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.11.0/24"
-  availability_zone = "${var.aws_region}a"
-}
-
-resource "aws_subnet" "private_2" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.12.0/24"
-  availability_zone = "${var.aws_region}b"
+  tags       = { Name = "${var.project_name}-vpc" }
 }
 
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
+  tags   = { Name = "${var.project_name}-igw" }
 }
 
-resource "aws_route_table" "public_rt" {
+resource "aws_subnet" "public" {
+  count = 2
   vpc_id = aws_vpc.main.id
+  cidr_block = element(["10.0.1.0/24","10.0.2.0/24"], count.index)
+  map_public_ip_on_launch = true
+  availability_zone = "${var.aws_region}${element(["a","b"], count.index)}"
+  tags = { Name = "${var.project_name}-public-${count.index+1}" }
+}
 
+resource "aws_subnet" "private" {
+  count = 2
+  vpc_id = aws_vpc.main.id
+  cidr_block = element(["10.0.11.0/24","10.0.12.0/24"], count.index)
+  availability_zone = "${var.aws_region}${element(["a","b"], count.index)}"
+  tags = { Name = "${var.project_name}-private-${count.index+1}" }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
+  tags = { Name = "${var.project_name}-public-rt" }
 }
 
-resource "aws_route_table_association" "public_1_assoc" {
-  subnet_id      = aws_subnet.public_1.id
-  route_table_id = aws_route_table.public_rt.id
+resource "aws_route_table_association" "pub_assoc" {
+  count          = length(aws_subnet.public)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
-resource "aws_route_table_association" "public_2_assoc" {
-  subnet_id      = aws_subnet.public_2.id
-  route_table_id = aws_route_table.public_rt.id
-}
+
+
 
 //Config ECS
 resource "aws_security_group" "ecs_sg" {
@@ -62,7 +54,7 @@ resource "aws_security_group" "ecs_sg" {
     from_port       = 8000
     to_port         = 8000
     protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id]  # o 0.0.0.0/0 si quieres abierto
+    cidr_blocks  = ["0.0.0.0/0"] #[aws_security_group.alb_sg.id] 
   }
   
   egress {
@@ -100,12 +92,38 @@ resource "aws_security_group" "rds_sg" {
   name   = "${var.project_name}-rds-sg"
   vpc_id = aws_vpc.main.id
 
+  # Conexión desde ECS
   ingress {
-    description = "Postgres access"
+    description      = "Postgres access from ECS"
+    from_port        = 5432
+    to_port          = 5432
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.ecs_sg.id]
+  }
+
+  # Conexión desde Bastion Host
+  ingress {
+    description      = "Postgres access from Bastion"
+    from_port        = 5432
+    to_port          = 5432
+    protocol         = "tcp"
+    security_groups  = [aws_security_group.bastion_sg.id] 
+  }
+
+  # Conexión desde tu PC (opcional)
+  ingress {
+    description = "Postgres access from my PC"
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    security_groups = [aws_security_group.ecs_sg.id]
+    cidr_blocks = ["181.224.38.25/32"] # reemplaza TU_IP
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -113,7 +131,7 @@ resource "aws_security_group" "rds_sg" {
 //RDS Postgres
 resource "aws_db_subnet_group" "db_subnets" {
   name       = "${var.project_name}-db-subnets"
-  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  subnet_ids = aws_subnet.private[*].id
 }
 
 resource "aws_db_instance" "postgres" {
@@ -136,6 +154,7 @@ resource "aws_db_instance" "postgres" {
 //ECR Repo
 resource "aws_ecr_repository" "repo" {
   name = "${var.project_name}-api"
+  force_delete = true
 }
 
 //Cluster Fargate
@@ -143,48 +162,45 @@ resource "aws_ecs_cluster" "cluster" {
   name = "${var.project_name}-cluster"
 }
 
-//Load Balancer
-resource "aws_lb" "alb" {
-  name               = "${var.project_name}-alb"
-  load_balancer_type = "application"
-  subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
-  security_groups    = [aws_security_group.alb_sg.id]
-}
+# //Load Balancer
+# resource "aws_lb" "alb" {
+#   name               = "${var.project_name}-alb"
+#   load_balancer_type = "application"
+#   subnets            = [aws_subnet.public_1.id, aws_subnet.public_2.id]
+#   security_groups    = [aws_security_group.alb_sg.id]
+# }
 
-//Target group
-resource "aws_lb_target_group" "tg" {
-  name     = "${var.project_name}-tg"
-  protocol = "HTTP"
-  port     = 8000
-  vpc_id   = aws_vpc.main.id
+# //Target group
+# resource "aws_lb_target_group" "tg" {
+#   name     = "${var.project_name}-tg"
+#   protocol = "HTTP"
+#   port     = 8000
+#   vpc_id   = aws_vpc.main.id
 
-  target_type = "ip"
-  health_check {
-    path = "/"
-    port = "traffic-port"
-    protocol = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    interval            = 20
-    timeout             = 5
-  }
-  lifecycle {
-    prevent_destroy = true
-  }
-}
+#   target_type = "ip"
+#   health_check {
+#     path = "/"
+#     port = "traffic-port"
+#     protocol = "HTTP"
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 3
+#     interval            = 20
+#     timeout             = 5
+#   }
+# }
 
 
-//Listener
-resource "aws_lb_listener" "listener" {
-  load_balancer_arn = aws_lb.alb.arn
-  port              = 80
-  protocol          = "HTTP"
+# //Listener
+# resource "aws_lb_listener" "listener" {
+#   load_balancer_arn = aws_lb.alb.arn
+#   port              = 80
+#   protocol          = "HTTP"
 
-  default_action {
-    type = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
-  }
-}
+#   default_action {
+#     type = "forward"
+#     target_group_arn = aws_lb_target_group.tg.arn
+#   }
+# }
 
 //CloudWatch
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
@@ -220,6 +236,10 @@ resource "aws_ecs_task_definition" "task" {
         { name = "DATABASE_NAME", value = var.db_name },
         { name = "DATABASE_USER", value = var.db_username },
         { name = "DATABASE_PASSWORD", value = var.db_password },
+        { name = "DJANGO_SUPERUSER_USERNAME", value = var.django_superuser_username},
+        { name = "DJANGO_SUPERUSER_EMAIL", value = var.django_superuser_email},
+        { name = "DJANGO_SUPERUSER_PASSWORD", value = var.django_superuser_password},
+        { name = "ALLOWED_HOSTS", value = "*" },
       ]
     }
   ])
@@ -236,25 +256,23 @@ resource "aws_ecs_service" "service" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
-  force_new_deployment = true
-  health_check_grace_period_seconds = 60
-
   network_configuration {
-    subnets         = [aws_subnet.private_1.id, aws_subnet.private_2.id]
-    security_groups = [aws_security_group.ecs_sg.id]
+    subnets          = aws_subnet.public[*].id
+    security_groups  = [aws_security_group.ecs_sg.id]
+    assign_public_ip = true
   }
 
-  load_balancer {
-    target_group_arn = aws_lb_target_group.tg.arn
-    container_name   = "django"
-    container_port   = 8000
-  }
-  # Asegura el orden de creación/borrado
-  depends_on = [
-    aws_lb_listener.listener,
-    aws_lb.alb,
-    aws_lb_target_group.tg
-  ]
+  # load_balancer {
+  #   target_group_arn = aws_lb_target_group.tg.arn
+  #   container_name   = "django"
+  #   container_port   = 8000
+  # }
+  # # Asegura el orden de creación/borrado
+  # depends_on = [
+  #   aws_lb_listener.listener,
+  #   aws_lb.alb,
+  #   aws_lb_target_group.tg
+  # ]
 }
 
 
@@ -282,36 +300,22 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
 }
 
 
-# Elastic IP para el NAT
-resource "aws_eip" "nat" {
-  domain = "vpc"
-}
-
-# NAT Gateway en subnet pública 1
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_1.id
-}
-
-# Route table para subnets privadas
-resource "aws_route_table" "private_rt" {
+resource "aws_security_group" "bastion_sg" {
+  name   = "${var.project_name}-bastion-sg"
   vpc_id = aws_vpc.main.id
 
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
+  ingress {
+    description = "SSH from my PC"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["181.224.38.25/32"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-# Asociar subnets privadas a la route table
-resource "aws_route_table_association" "private_1_assoc" {
-  subnet_id      = aws_subnet.private_1.id
-  route_table_id = aws_route_table.private_rt.id
-}
-
-resource "aws_route_table_association" "private_2_assoc" {
-  subnet_id      = aws_subnet.private_2.id
-  route_table_id = aws_route_table.private_rt.id
-}
-
-

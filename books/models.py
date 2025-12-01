@@ -9,7 +9,6 @@ class Authors(models.Model):
     death_date = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'authors'
 
     def __str__(self):
@@ -31,7 +30,6 @@ class Books(models.Model):
     stock = models.IntegerField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'books'
 
     def __str__(self):
@@ -52,7 +50,6 @@ class AuthorBook(models.Model):
     book = models.ForeignKey('Books',models.DO_NOTHING,blank=True,null=True,related_name='authors')
 
     class Meta:
-        managed = False
         db_table = 'author_book'
         unique_together = ('author', 'book')
 

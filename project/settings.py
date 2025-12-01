@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from corsheaders.defaults import default_headers
 import os
+import logging
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,12 +28,29 @@ SECRET_KEY = 'django-insecure-u5&0!o1^_+l=%*1=9!*2@=a#cuxf^9rns18+*ecvmtwq!8#x99
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["homebook-alb-2106439201.us-east-1.elb.amazonaws.com", "127.0.0.1"]
 
+
+
+#ALLOWED_HOSTS = ["homebook-alb-2106439201.us-east-1.elb.amazonaws.com", "127.0.0.1"]
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS")
+if ALLOWED_HOSTS:
+    ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS.split(",")]
+else:
+    ALLOWED_HOSTS = []
+
+
+#logger = logging.getLogger(__name__)
+#logger.warning("ALLOWED_HOSTS ---->: %s", ALLOWED_HOSTS)
+
+
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 
 INSTALLED_APPS = [
+    'users',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,9 +58,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'admin_books',
     'books',
     'orders',
-    'users',
     'payments',
     'shippings',
     'api',
@@ -86,11 +104,10 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', 'home_book'),
-        'USER': os.environ.get('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'server'),
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-        'PORT': '5432',
+        'NAME': os.getenv('DATABASE_NAME', 'home_book'),
+        'USER': os.getenv('DATABASE_USER', 'postgres'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', 'server'),
+        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
         # 'TEST': {
         #     'NAME': 'test_home_book',
         #     'MIRROR': None,
@@ -174,5 +191,3 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 
 
 TEST_RUNNER = "project.test_runner.NoDbTestRunner"
-
-print("AQUI---> ALLOWED_HOSTS:", ALLOWED_HOSTS)
